@@ -230,7 +230,7 @@ try {
             exit(0);
         }
 
-        $runner->runAll();
+        $runner->run();
         $logger("All seeds completed successfully!", 'info');
     }
 

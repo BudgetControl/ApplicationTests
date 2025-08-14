@@ -72,6 +72,8 @@ class RunSeeds extends AbstractSeed
         
         $this->log("Discovering and running user seeds...");
         $this->discoverAndRunUserSeeds();
+
+
     }
 
     /**
@@ -212,10 +214,10 @@ class RunSeeds extends AbstractSeed
         }
 
         $this->log("Scanning directory: {$directory}");
-        $files = glob($directory . '/*.php');
+        $files = glob($directory . '/*Seed.php');
         
         if (empty($files)) {
-            $this->log("No PHP files found in {$directory}");
+            $this->log("No Seed files found in {$directory}");
             return $this;
         }
 

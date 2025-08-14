@@ -31,6 +31,9 @@
             "Budgetcontrol\\ApplicationTests\\": "src/"
         }
     },
+    "bin": [
+        "bin/budgetcontrol-seeds"
+    ],
     "authors": [
         {
             "name": "Marco De Felice",
@@ -55,7 +58,11 @@
         "setup-project-files": [
             "php -r \"if (!file_exists('resources/seeds')) { mkdir('resources/seeds', 0755, true); echo 'Created resources/seeds directory\\n'; }\"",
             "php -r \"if (!file_exists('resources/seeds/SeedExample.php')) { copy('vendor/budgetcontrol/application-tests/templates/SeedExample.php', 'resources/seeds/SeedExample.php'); echo 'Copied SeedExample.php\\n'; }\"",
-            "php -r \"copy('vendor/budgetcontrol/application-tests/templates/phinx.php', 'phinx.php'); echo 'Copied phinx.php configuration\\n'; \""
+            "php -r \"copy('vendor/budgetcontrol/application-tests/templates/phinx.php', 'phinx.php'); echo 'Copied phinx.php configuration\\n'; \"",
+            "php -r \"if (!file_exists('vendor/bin/bcseeds')) { copy('vendor/budgetcontrol/application-tests/bin/bcseeds', 'vendor/bin/bcseeds'); echo 'Copied bcseeds binary\\n'; }\""
         ]
+    },
+    "require": {
+        "fakerphp/faker": "^1.24"
     }
 }

@@ -222,7 +222,14 @@ function dropSchema(string $environment, string $configPath, callable $logger): 
         if ($dbConfig['adapter'] === 'pgsql') {
             // PostgreSQL - termina connessioni attive prima di droppare
             $pdo->exec("SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '{$dbName}' AND pid <> pg_backend_pid()");
-            $pdo->exec("DROP DATABASE IF EXISTS \"{$dbName}\"");
+            
+            try {
+                $pdo->exec("DROP SCHEMA IF EXISTS \"{$dbName}\" CASCADE");
+                $logger("Schema '{$dbName}' dropped successfully", 'info');
+            } catch (PDOException $e) {
+                $logger("Failed to drop schema: " . $e->getMessage(), 'warning');
+            }
+
             $logger("Database '{$dbName}' dropped successfully", 'info');
 
             // Crea database
@@ -230,7 +237,13 @@ function dropSchema(string $environment, string $configPath, callable $logger): 
             $logger("Database '{$dbName}' created successfully", 'info');
         } else {
             // MySQL/MariaDB
-            $pdo->exec("DROP DATABASE IF EXISTS `{$dbName}`");
+            try {
+                $pdo->exec("DROP SCHEMA IF EXISTS `{$dbName}` CASCADE");
+                $logger("Schema '{$dbName}' dropped successfully", 'info');
+            } catch (PDOException $e) {
+                $logger("Failed to drop schema: " . $e->getMessage(), 'warning');
+            }
+
             $logger("Database '{$dbName}' dropped successfully", 'info');
 
             $pdo->exec("CREATE DATABASE `{$dbName}` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
@@ -240,7 +253,6 @@ function dropSchema(string $environment, string $configPath, callable $logger): 
         return true;
     } catch (PDOException $e) {
         $logger("Failed to drop schema: " . $e->getMessage(), 'error');
-        return false;
     }
 }
 

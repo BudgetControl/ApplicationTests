@@ -23,9 +23,7 @@
 
 // Find the autoloader
 $autoloadPaths = [
-    __DIR__ . '/../vendor/autoload.php',  // When used as dependency
-    __DIR__ . '/../../../autoload.php',  // When in vendor/budgetcontrol/application-tests/bin
-    __DIR__ . '/../../../../autoload.php', // Alternative vendor structure
+     __DIR__ . '/../../bootstrap/app.php',  // When used as dependency
 ];
 
 $autoloader = null;

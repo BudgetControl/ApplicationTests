@@ -21,9 +21,18 @@
  * @author Marco De Felice <marco.defelice@mlabfactory.it>
  */
 
-// Find the autoloader
+// Find the bootstrap or autoloader
+$bootstrapPaths = [
+    __DIR__ . '/../../bootstrap/app.php',          // BudgetControl bootstrap (preferred)
+    getcwd() . '/bootstrap/app.php',               // Project root bootstrap
+    __DIR__ . '/../../../bootstrap/app.php',       // Alternative bootstrap location
+];
+
 $autoloadPaths = [
-     __DIR__ . '/../../bootstrap/app.php',  // When used as dependency
+    __DIR__ . '/../vendor/autoload.php',           // When developing the package
+    __DIR__ . '/../../../autoload.php',           // When installed as dependency
+    __DIR__ . '/../../../../autoload.php',        // Alternative vendor structure
+    getcwd() . '/vendor/autoload.php',            // When run from project root
 ];
 
 $autoloader = null;

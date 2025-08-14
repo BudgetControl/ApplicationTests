@@ -46,7 +46,8 @@
         "budgetcontrol/seeds": "^0.3.2",
         "budgetcontrol/schema-registry-service": "^1.5.1",
         "mlabfactory/phpunit-self-api-integration": "^1.1.1-beta",
-        "robmorgan/phinx": "^0.16.10"
+        "robmorgan/phinx": "^0.16.10",
+        "fakerphp/faker": "^1.24"
     },
     "scripts": {
         "post-install-cmd": [
@@ -61,7 +62,7 @@
             "php -r \"if (!file_exists('phinx.php')) { copy('vendor/budgetcontrol/application-tests/templates/phinx.php', 'phinx.php'); echo 'Copied phinx.php configuration\\n'; }\""
         ]
     },
-    "require": {
-        "fakerphp/faker": "^1.24"
-    }
+    "bin": [
+        "bin/bc-seeds"
+    ]
 }

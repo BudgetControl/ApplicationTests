@@ -41,7 +41,7 @@
         }
     ],
     "minimum-stability": "alpha",
-    "require-dev": {
+    "require": {
         "phpunit/phpunit": "^10.0",
         "budgetcontrol/seeds": "^0.3.2",
         "budgetcontrol/schema-registry-service": "^1.5.1",

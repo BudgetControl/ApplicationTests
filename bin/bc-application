@@ -4,10 +4,10 @@
 /**
  * BudgetControl Seeds Runner
  * 
- * This executable allows running seeds from the command line using vendor/bin/bc-seeds
+ * This executable allows running seeds from the command line using vendor/bin/bc-application
  * 
  * Usage:
- *   vendor/bin/bc-seeds [options]
+ *   vendor/bin/bc-application [options]
  * 
  * Options:
  *   --path=<path>        Custom path to seeds directory (default: resources/seeds)
@@ -16,15 +16,13 @@
  *   --help               Show this help message
  *   --list               List all discovered seeds without executing them
  *   --seed=<name>        Run only a specific seed by name
+ *   --seeds              Run all seeds in the specified path
  *   --drop-schema        Drop the database schema before running
  *   --migrate            Run Phinx migrations before seeds
  *   --rollback           Rollback migrations to target (use with --target)
  *   --target=<target>    Target for rollback (version number or 0 for all)
  *   --environment=<env>  Phinx environment (default: development)
  *   --config=<path>      Path to phinx configuration file (default: phinx.php)
- *   --test               Run PHPUnit tests after seeds execution
- *   --test-config=<path> Path to PHPUnit configuration file (default: phpunit.xml)
- *   --test-only          Run only tests without seeds
  * 
  * @package Budgetcontrol\ApplicationTests
  * @author Marco De Felice <marco.defelice@mlabfactory.it>
@@ -100,14 +98,12 @@ function parseArguments(array $argv): array
         'target' => null,
         'environment' => 'development',
         'config' => 'phinx.php',
-        'test' => false,
-        'test-config' => 'phpunit.xml',
-        'test-only' => false,
+        'seeds' => false,
     ];
 
     for ($i = 1; $i < count($argv); $i++) {
         $arg = $argv[$i];
-        
+
         if ($arg === '--verbose' || $arg === '-v') {
             $options['verbose'] = true;
         } elseif ($arg === '--quiet' || $arg === '-q') {
@@ -122,10 +118,6 @@ function parseArguments(array $argv): array
             $options['migrate'] = true;
         } elseif ($arg === '--rollback') {
             $options['rollback'] = true;
-        } elseif ($arg === '--test') {
-            $options['test'] = true;
-        } elseif ($arg === '--test-only') {
-            $options['test-only'] = true;
         } elseif (strpos($arg, '--path=') === 0) {
             $options['path'] = substr($arg, 7);
         } elseif (strpos($arg, '--seed=') === 0) {
@@ -136,8 +128,8 @@ function parseArguments(array $argv): array
             $options['environment'] = substr($arg, 14);
         } elseif (strpos($arg, '--config=') === 0) {
             $options['config'] = substr($arg, 9);
-        } elseif (strpos($arg, '--test-config=') === 0) {
-            $options['test-config'] = substr($arg, 14);
+        } elseif ($arg === '--seeds') {
+            $options['seeds'] = true;
         } else {
             echo "Warning: Unknown option '{$arg}'\n";
         }
@@ -152,10 +144,10 @@ function parseArguments(array $argv): array
 function showHelp(): void
 {
     echo "\n";
-    echo "BudgetControl Seeds Runner\n";
-    echo "==========================\n\n";
+    echo "BudgetControl Application Runner\n";
+    echo "===============================\n\n";
     echo "Usage:\n";
-    echo "  vendor/bin/bc-seeds [options]\n\n";
+    echo "  vendor/bin/bc-application [options]\n\n";
     echo "Options:\n";
     echo "  --path=<path>        Custom path to seeds directory (default: resources/seeds)\n";
     echo "  --verbose, -v        Enable verbose output\n";
@@ -163,29 +155,24 @@ function showHelp(): void
     echo "  --help, -h           Show this help message\n";
     echo "  --list, -l           List all discovered seeds without executing them\n";
     echo "  --seed=<name>        Run only a specific seed by name\n";
+    echo "  --seeds              Run all seeds in the specified path\n";
     echo "  --drop-schema        Drop the database schema before running\n";
     echo "  --migrate            Run Phinx migrations before seeds\n";
     echo "  --rollback           Rollback migrations to target\n";
     echo "  --target=<target>    Target for rollback (version number or 0 for all)\n";
     echo "  --environment=<env>  Phinx environment (default: development)\n";
-    echo "  --config=<path>      Path to phinx configuration file (default: phinx.php)\n";
-    echo "  --test               Run PHPUnit tests after seeds execution\n";
-    echo "  --test-config=<path> Path to PHPUnit configuration file (default: phpunit.xml)\n";
-    echo "  --test-only          Run only tests without seeds\n\n";
+    echo "  --config=<path>      Path to phinx configuration file (default: phinx.php)\n\n";
     echo "Examples:\n";
-    echo "  vendor/bin/bc-seeds --verbose\n";
-    echo "  vendor/bin/bc-seeds --drop-schema --migrate --test\n";
-    echo "  vendor/bin/bc-seeds --rollback --target=0\n";
-    echo "  vendor/bin/bc-seeds --environment=testing --migrate --test\n";
-    echo "  vendor/bin/bc-seeds --path=database/seeds --seed=UserSeed\n";
-    echo "  vendor/bin/bc-seeds --test-only\n\n";
+    echo "  vendor/bin/bc-application --verbose\n";
+    echo "  vendor/bin/bc-application --drop-schema --migrate\n";
+    echo "  vendor/bin/bc-application --rollback --target=0\n";
+    echo "  vendor/bin/bc-application --environment=testing --migrate\n";
+    echo "  vendor/bin/bc-application --path=database/seeds --seed=UserSeed\n\n";
     echo "Common workflows:\n";
-    echo "  # Fresh database with migrations, seeds and tests\n";
-    echo "  vendor/bin/bc-seeds --drop-schema --migrate --test\n\n";
-    echo "  # Reset database completely and run tests\n";
-    echo "  vendor/bin/bc-seeds --rollback --target=0 --drop-schema --test\n\n";
-    echo "  # Run only tests\n";
-    echo "  vendor/bin/bc-seeds --test-only\n\n";
+    echo "  # Fresh database with migrations and seeds\n";
+    echo "  vendor/bin/bc-application --drop-schema --migrate\n\n";
+    echo "  # Reset database completely\n";
+    echo "  vendor/bin/bc-application --rollback --target=0 --drop-schema\n\n";
 }
 
 /**
@@ -194,43 +181,63 @@ function showHelp(): void
 function dropSchema(string $environment, string $configPath, callable $logger): bool
 {
     $logger("Dropping database schema...", 'info');
-    
+
     if (!file_exists($configPath)) {
         $logger("Phinx config file not found: {$configPath}", 'error');
         return false;
     }
-    
+
     $config = require $configPath;
-    
+
     if (!isset($config['environments'][$environment])) {
         $logger("Environment '{$environment}' not found in config", 'error');
         return false;
     }
-    
+
     $dbConfig = $config['environments'][$environment];
-    
+
     try {
-        $dsn = sprintf(
-            "%s:host=%s;port=%s",
-            $dbConfig['adapter'],
-            $dbConfig['host'],
-            $dbConfig['port'] ?? 3306
-        );
-        
+        // Per PostgreSQL dobbiamo connetterci al database di sistema 'postgres'
+        if ($dbConfig['adapter'] === 'pgsql') {
+            $dsn = sprintf(
+                "pgsql:host=%s;port=%s;dbname=postgres",
+                $dbConfig['host'],
+                $dbConfig['port'] ?? 5432
+            );
+        } else {
+            // MySQL/MariaDB
+            $dsn = sprintf(
+                "%s:host=%s;port=%s",
+                $dbConfig['adapter'],
+                $dbConfig['host'],
+                $dbConfig['port'] ?? 3306
+            );
+        }
+
         $pdo = new PDO($dsn, $dbConfig['user'], $dbConfig['pass']);
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-        
-        // Drop database if exists
+
         $dbName = $dbConfig['name'];
-        $pdo->exec("DROP DATABASE IF EXISTS `{$dbName}`");
-        $logger("Database '{$dbName}' dropped successfully", 'info');
-        
-        // Create database
-        $pdo->exec("CREATE DATABASE `{$dbName}` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
-        $logger("Database '{$dbName}' created successfully", 'info');
-        
+
+        if ($dbConfig['adapter'] === 'pgsql') {
+            // PostgreSQL - termina connessioni attive prima di droppare
+            $pdo->exec("SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '{$dbName}' AND pid <> pg_backend_pid()");
+            $pdo->exec("DROP DATABASE IF EXISTS \"{$dbName}\"");
+            $logger("Database '{$dbName}' dropped successfully", 'info');
+
+            // Crea database
+            $pdo->exec("CREATE DATABASE \"{$dbName}\" WITH ENCODING 'UTF8'");
+            $logger("Database '{$dbName}' created successfully", 'info');
+        } else {
+            // MySQL/MariaDB
+            $pdo->exec("DROP DATABASE IF EXISTS `{$dbName}`");
+            $logger("Database '{$dbName}' dropped successfully", 'info');
+
+            $pdo->exec("CREATE DATABASE `{$dbName}` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+            $logger("Database '{$dbName}' created successfully", 'info');
+        }
+
         return true;
-        
     } catch (PDOException $e) {
         $logger("Failed to drop schema: " . $e->getMessage(), 'error');
         return false;
@@ -243,27 +250,27 @@ function dropSchema(string $environment, string $configPath, callable $logger): 
 function runMigrations(string $environment, string $configPath, callable $logger, bool $verbose = false): bool
 {
     $logger("Running Phinx migrations...", 'info');
-    
+
     if (!file_exists($configPath)) {
         $logger("Phinx config file not found: {$configPath}", 'error');
         return false;
     }
-    
+
     $phinxBinary = findPhinxBinary();
     if (!$phinxBinary) {
         $logger("Phinx binary not found", 'error');
         return false;
     }
-    
+
     $verboseFlag = $verbose ? ' -v' : '';
     $command = "{$phinxBinary} migrate -c {$configPath} -e {$environment}{$verboseFlag}";
-    
+
     $logger("Executing: {$command}", 'info');
-    
+
     $output = [];
     $returnCode = 0;
     exec($command . ' 2>&1', $output, $returnCode);
-    
+
     if ($returnCode === 0) {
         $logger("Migrations completed successfully", 'info');
         if ($verbose) {
@@ -287,28 +294,28 @@ function runMigrations(string $environment, string $configPath, callable $logger
 function rollbackMigrations(string $environment, string $configPath, ?string $target, callable $logger, bool $verbose = false): bool
 {
     $logger("Rolling back Phinx migrations...", 'info');
-    
+
     if (!file_exists($configPath)) {
         $logger("Phinx config file not found: {$configPath}", 'error');
         return false;
     }
-    
+
     $phinxBinary = findPhinxBinary();
     if (!$phinxBinary) {
         $logger("Phinx binary not found", 'error');
         return false;
     }
-    
+
     $targetFlag = $target !== null ? " -t {$target}" : '';
     $verboseFlag = $verbose ? ' -v' : '';
     $command = "{$phinxBinary} rollback -c {$configPath} -e {$environment}{$targetFlag}{$verboseFlag}";
-    
+
     $logger("Executing: {$command}", 'info');
-    
+
     $output = [];
     $returnCode = 0;
     exec($command . ' 2>&1', $output, $returnCode);
-    
+
     if ($returnCode === 0) {
         $logger("Rollback completed successfully", 'info');
         if ($verbose) {
@@ -337,92 +344,19 @@ function findPhinxBinary(): ?string
         getcwd() . '/vendor/bin/phinx',            // When run from project root
         'phinx',                                   // Global installation
     ];
-    
+
     foreach ($phinxPaths as $path) {
         if (file_exists($path) && is_executable($path)) {
             return $path;
         }
     }
-    
+
     // Try with which command
     $which = shell_exec('which phinx 2>/dev/null');
     if ($which && file_exists(trim($which))) {
         return trim($which);
     }
-    
-    return null;
-}
 
-/**
- * Run PHPUnit tests
- */
-function runTests(string $configPath, callable $logger, bool $verbose = false): bool
-{
-    $logger("Running PHPUnit tests...", 'info');
-    
-    $phpunitBinary = findPhpunitBinary();
-    if (!$phpunitBinary) {
-        $logger("PHPUnit binary not found", 'error');
-        return false;
-    }
-    
-    $configFlag = '';
-    if (file_exists($configPath)) {
-        $configFlag = " --configuration {$configPath}";
-    } else {
-        $logger("PHPUnit config file not found: {$configPath}, running without config", 'warning');
-    }
-    
-    $verboseFlag = $verbose ? ' --verbose' : '';
-    $command = "{$phpunitBinary}{$configFlag}{$verboseFlag}";
-    
-    $logger("Executing: {$command}", 'info');
-    
-    $output = [];
-    $returnCode = 0;
-    exec($command . ' 2>&1', $output, $returnCode);
-    
-    if ($returnCode === 0) {
-        $logger("Tests completed successfully", 'info');
-        if ($verbose) {
-            foreach ($output as $line) {
-                echo "  {$line}\n";
-            }
-        }
-        return true;
-    } else {
-        $logger("Tests failed with return code: {$returnCode}", 'error');
-        foreach ($output as $line) {
-            $logger("  {$line}", 'error');
-        }
-        return false;
-    }
-}
-
-/**
- * Find PHPUnit binary
- */
-function findPhpunitBinary(): ?string
-{
-    $phpunitPaths = [
-        __DIR__ . '/../../../bin/phpunit',         // When installed as dependency
-        __DIR__ . '/../vendor/bin/phpunit',        // When developing the package
-        getcwd() . '/vendor/bin/phpunit',          // When run from project root
-        'phpunit',                                 // Global installation
-    ];
-    
-    foreach ($phpunitPaths as $path) {
-        if (file_exists($path) && is_executable($path)) {
-            return $path;
-        }
-    }
-    
-    // Try with which command
-    $which = shell_exec('which phpunit 2>/dev/null');
-    if ($which && file_exists(trim($which))) {
-        return trim($which);
-    }
-    
     return null;
 }
 
@@ -444,10 +378,10 @@ function createCliLogger(bool $quiet): callable
 
         $reset = "\033[0m";
         $color = $colors[$level] ?? $colors['info'];
-        
+
         $timestamp = date('Y-m-d H:i:s');
         $levelUpper = strtoupper($level);
-        
+
         echo "{$color}[{$timestamp}] [{$levelUpper}]{$reset} {$message}\n";
     };
 }
@@ -464,16 +398,6 @@ try {
     // Create logger
     $logger = createCliLogger($options['quiet']);
     $verbose = $options['verbose'] && !$options['quiet'];
-
-    // If test-only is specified, just run tests and exit
-    if ($options['test-only']) {
-        if (!runTests($options['test-config'], $logger, $verbose)) {
-            $logger("Tests failed", 'error');
-            exit(1);
-        }
-        $logger("Tests completed successfully!", 'info');
-        exit(0);
-    }
 
     // Validate config file if database operations are requested
     if ($options['drop-schema'] || $options['migrate'] || $options['rollback']) {
@@ -513,7 +437,7 @@ try {
 
     // Discover seeds
     $seedsPath = $options['path'];
-    
+
     if ($seedsPath) {
         if (!is_dir($seedsPath)) {
             $logger("Error: Seeds directory does not exist: {$seedsPath}", 'error');
@@ -521,26 +445,28 @@ try {
         }
         $runner->discoverSeeds($seedsPath);
     } else {
-        // Use the private method through reflection to get user seeds path
-        $reflection = new ReflectionClass($runner);
-        $method = $reflection->getMethod('getUserSeedsPath');
-        $method->setAccessible(true);
-        $seedsPath = $method->invoke($runner);
-        
-        if (is_dir($seedsPath)) {
-            $runner->discoverSeeds($seedsPath);
-        } else {
-            $logger("Seeds directory not found: {$seedsPath}", 'warning');
-            $logger("Creating seeds directory...", 'info');
-            mkdir($seedsPath, 0755, true);
-            $logger("Seeds directory created: {$seedsPath}", 'info');
+        if ($options['migrate'] || $options['seeds']) {
+            // Use the private method through reflection to get user seeds path
+            $reflection = new ReflectionClass($runner);
+            $method = $reflection->getMethod('getUserSeedsPath');
+            $method->setAccessible(true);
+            $seedsPath = $method->invoke($runner);
+
+            if (is_dir($seedsPath)) {
+                $runner->discoverSeeds($seedsPath);
+            } else {
+                $logger("Seeds directory not found: {$seedsPath}", 'warning');
+                $logger("Creating seeds directory...", 'info');
+                mkdir($seedsPath, 0755, true);
+                $logger("Seeds directory created: {$seedsPath}", 'info');
+            }
         }
     }
 
     // List seeds if requested
     if ($options['list']) {
         $seeds = $runner->getRegisteredSeeds();
-        
+
         if (empty($seeds)) {
             $logger("No seeds found in {$seedsPath}", 'warning');
         } else {
@@ -559,7 +485,7 @@ try {
         $logger("Seed '{$options['seed']}' completed successfully!", 'info');
     } else {
         $seeds = $runner->getRegisteredSeeds();
-        
+
         if (empty($seeds)) {
             $logger("No seeds to execute in {$seedsPath}", 'warning');
         } else {
@@ -568,35 +494,29 @@ try {
         }
     }
 
-    // Run tests if requested
-    if ($options['test']) {
-        if (!runTests($options['test-config'], $logger, $verbose)) {
-            $logger("Tests failed", 'error');
-            exit(1);
-        }
-        $logger("Tests completed successfully!", 'info');
-    }
-
     exit(0);
-
 } catch (Exception $e) {
-    $logger = $logger ?? function($msg, $level) { echo "[ERROR] {$msg}\n"; };
+    $logger = $logger ?? function ($msg, $level) {
+        echo "[ERROR] {$msg}\n";
+    };
     $logger("Fatal error: " . $e->getMessage(), 'error');
-    
+
     if (isset($options) && $options['verbose']) {
         $logger("Stack trace:", 'error');
         echo $e->getTraceAsString() . "\n";
     }
-    
+
     exit(1);
 } catch (Error $e) {
-    $logger = $logger ?? function($msg, $level) { echo "[ERROR] {$msg}\n"; };
+    $logger = $logger ?? function ($msg, $level) {
+        echo "[ERROR] {$msg}\n";
+    };
     $logger("Fatal error: " . $e->getMessage(), 'error');
-    
+
     if (isset($options) && $options['verbose']) {
         $logger("Stack trace:", 'error');
         echo $e->getTraceAsString() . "\n";
     }
-    
+
     exit(1);
 }

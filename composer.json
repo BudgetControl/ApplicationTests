@@ -1,0 +1,61 @@
+{
+    "name": "budgetcontrol/application-tests",
+    "description": "Library for managing and executing PHP application tests within the BudgetControl project.",
+    "type": "library",
+    "keywords": ["testing", "phpunit", "integration-tests", "budgetcontrol"],
+    "prefer-stable": false,
+    "repositories": {
+        "source": {
+            "type": "vcs",
+            "url": "https://github.com/mlabfactory/phpunit-self-api-integration.git"
+        },
+        "budgetcontrol/library" : {
+            "type":"vcs",
+            "url":"https://github.com/BudgetControl/Library.git"
+        },
+        "budgetcontrol/seeds" : {
+            "type":"vcs",
+            "url":"git@github.com:BudgetControl/SeedsTestLibs.git"
+        },
+        "budgetcontrol/schema-registry-service" : {
+            "type":"vcs",
+            "url":"git@github.com:BudgetControl/Schema-Registry-Service.git"
+        },
+        "budgetcontrol/cryptable" : {
+            "type":"vcs",
+            "url":"git@github.com:BudgetControl/LibsCryptable.git"
+        }
+    },
+    "autoload": {
+        "psr-4": {
+            "Budgetcontrol\\ApplicationTests\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Marco De Felice",
+            "email": "marco.defelice@mlabfactory.it"
+        }
+    ],
+    "minimum-stability": "alpha",
+    "require-dev": {
+        "phpunit/phpunit": "^10.0",
+        "budgetcontrol/seeds": "^0.3.2",
+        "budgetcontrol/schema-registry-service": "^1.5.1",
+        "mlabfactory/phpunit-self-api-integration": "^1.1.1-beta",
+        "robmorgan/phinx": "^0.16.10"
+    },
+    "scripts": {
+        "post-install-cmd": [
+            "@setup-project-files"
+        ],
+        "post-update-cmd": [
+            "@setup-project-files"
+        ],
+        "setup-project-files": [
+            "php -r \"if (!file_exists('resources/seeds')) { mkdir('resources/seeds', 0755, true); echo 'Created resources/seeds directory\\n'; }\"",
+            "php -r \"if (!file_exists('resources/seeds/SeedExample.php')) { copy('vendor/budgetcontrol/application-tests/templates/SeedExample.php', 'resources/seeds/SeedExample.php'); echo 'Copied SeedExample.php\\n'; }\"",
+            "php -r \"copy('vendor/budgetcontrol/application-tests/templates/phinx.php', 'phinx.php'); echo 'Copied phinx.php configuration\\n'; \""
+        ]
+    }
+}

@@ -4,10 +4,10 @@
 /**
  * BudgetControl Seeds Runner
  * 
- * This executable allows running seeds from the command line using vendor/bin/budgetcontrol-seeds
+ * This executable allows running seeds from the command line using vendor/bin/bc-seeds
  * 
  * Usage:
- *   vendor/bin/budgetcontrol-seeds [options]
+ *   vendor/bin/bc-seeds [options]
  * 
  * Options:
  *   --path=<path>    Custom path to seeds directory (default: resources/seeds)
@@ -35,17 +35,39 @@ $autoloadPaths = [
     getcwd() . '/vendor/autoload.php',            // When run from project root
 ];
 
-$autoloader = null;
-foreach ($autoloadPaths as $path) {
+$app = null;
+$bootstrapUsed = false;
+
+// Try to load BudgetControl bootstrap first
+foreach ($bootstrapPaths as $path) {
     if (file_exists($path)) {
-        $autoloader = require_once $path;
+        $app = require_once $path;
+        $bootstrapUsed = true;
         break;
     }
 }
 
-if (!$autoloader) {
-    echo "Error: Could not find Composer autoloader.\n";
-    echo "Please run 'composer install' first.\n";
+// If no bootstrap found, try standard Composer autoloader
+if (!$app) {
+    foreach ($autoloadPaths as $path) {
+        if (file_exists($path)) {
+            $app = require_once $path;
+            break;
+        }
+    }
+}
+
+if (!$app) {
+    echo "Error: Could not find BudgetControl bootstrap or Composer autoloader.\n";
+    echo "Please ensure you're running this from a BudgetControl project or run 'composer install'.\n";
+    echo "\nSearched bootstrap paths:\n";
+    foreach ($bootstrapPaths as $path) {
+        echo "  - {$path}\n";
+    }
+    echo "\nSearched autoloader paths:\n";
+    foreach ($autoloadPaths as $path) {
+        echo "  - {$path}\n";
+    }
     exit(1);
 }
 
@@ -97,7 +119,7 @@ function showHelp(): void
     echo "BudgetControl Seeds Runner\n";
     echo "==========================\n\n";
     echo "Usage:\n";
-    echo "  vendor/bin/budgetcontrol-seeds [options]\n\n";
+    echo "  vendor/bin/bc-seeds [options]\n\n";
     echo "Options:\n";
     echo "  --path=<path>    Custom path to seeds directory (default: resources/seeds)\n";
     echo "  --verbose, -v    Enable verbose output\n";
@@ -106,10 +128,10 @@ function showHelp(): void
     echo "  --list, -l       List all discovered seeds without executing them\n";
     echo "  --seed=<name>    Run only a specific seed by name\n\n";
     echo "Examples:\n";
-    echo "  vendor/bin/budgetcontrol-seeds --verbose\n";
-    echo "  vendor/bin/budgetcontrol-seeds --path=database/seeds\n";
-    echo "  vendor/bin/budgetcontrol-seeds --list\n";
-    echo "  vendor/bin/budgetcontrol-seeds --seed=UserSeed\n\n";
+    echo "  vendor/bin/bc-seeds --verbose\n";
+    echo "  vendor/bin/bc-seeds --path=database/seeds\n";
+    echo "  vendor/bin/bc-seeds --list\n";
+    echo "  vendor/bin/bc-seeds --seed=UserSeed\n\n";
 }
 
 /**
